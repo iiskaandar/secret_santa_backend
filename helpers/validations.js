@@ -1,6 +1,4 @@
 import bcrypt from 'bcryptjs';
-import jwt from 'jsonwebtoken';
-import env from '../env';
 /**
    * Hash Password Method
    * @param {string} password
@@ -52,20 +50,6 @@ const isEmpty = (input) => {
 };
 
 
-/**
-   * Generate Token
-   * @param {string} id
-   * @returns {string} token
-   */
-const generateUserToken = (email, id, name) => {
-    const token = jwt.sign({
-        email,
-        id: id,
-        name,
-    },
-        env.secret, { expiresIn: '3d' });
-    return token;
-};
 
 
 export {
@@ -74,6 +58,4 @@ export {
     isValidEmail,
     validatePassword,
     isEmpty,
-    generateUserToken,
-
 };

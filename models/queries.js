@@ -1,11 +1,18 @@
-const createUserQuery = `INSERT INTO
-users(email, name, password, created_on)
-VALUES($1, $2, $3, $4)
-returning *`;
+const createUserQuery = `INSERT INTO Persons (Name, Password)
+VALUES ($1, $2)`;
 
-const userDetailsQuery = 'SELECT * FROM users WHERE email = $1';
+const getUsersQuery = 'SELECT * from Persons';
+
+const getUserQuery = 'SELECT * FROM Persons WHERE Name=$1';
+
+const setNotToDraw = 'UPDATE PERSONS SET notToDraw=$1 WHERE ID=$2;'
+
+const setDrawnPerson = 'UPDATE PERSONS SET drawnPerson=$1 WHERE ID=$2;'
 
 export {
     createUserQuery,
-    userDetailsQuery,
+    getUsersQuery,
+    getUserQuery,
+    setNotToDraw,
+    setDrawnPerson
 };

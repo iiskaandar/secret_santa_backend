@@ -8,13 +8,14 @@ import {
     isValidEmail,
     validatePassword,
     isEmpty,
-    generateUserToken,
 } from '../helpers/validations';
 
 import {
     createUserQuery,
-    userDetailsQuery,
-
+    getUsersQuery,
+    getUserQuery,
+    setNotToDraw,
+    setDrawnPerson
 } from '../models/queries.js';
 
 import {
@@ -29,46 +30,28 @@ import {
    */
 const createUser = async (req, res) => {
     const {
-        email, name, password
+        name, password
     } = req.body;
 
-    const created_on = moment(new Date());
-    if (isEmpty(email) || isEmpty(name) || isEmpty(password)) {
-        errorMessage.error = 'Email, password, name field cannot be empty';
+    if (isEmpty(name) || isEmpty(password)) {
+        errorMessage.error = 'Password, name field cannot be empty';
         return res.status(status.bad).send(errorMessage);
     }
-    if (!isValidEmail(email)) {
-        errorMessage.error = 'Please enter a valid Email';
-        return res.status(status.bad).send(errorMessage);
-    }
-    if (!validatePassword(password)) {
-        errorMessage.error = 'Password must be more than five(5) characters';
-        return res.status(status.bad).send(errorMessage);
-    }
-    const { rows } = await db.query(userDetailsQuery, [email]);
-    if (rows.length > 0) {
-        errorMessage.error = 'User with that EMAIL already exists';
+    const response = await db.query(getUserQuery, [name]);
+    if (response.rows.length > 0) {
+        errorMessage.error = 'User with that name already exists';
         return res.status(status.conflict).send(errorMessage);
-
-    }
-
-    const hashedPassword = hashPassword(password);
-
+    } 
     const values = [
-        email,
         name,
-        hashedPassword,
-        created_on,
+        password
     ];
-
     try {
-        const { rows } = await db.query(createUserQuery, values);
-        const dbResponse = rows[0];
-        console.log(dbResponse);
+        await db.query(createUserQuery, values);
+        const response = await db.query(getUserQuery, [name]);
+        const dbResponse = response.rows[0];
         delete dbResponse.password;
-        const token = generateUserToken(dbResponse.email, dbResponse.id, dbResponse.name);
-        successMessage.data = dbResponse;
-        successMessage.data.token = token;
+        successMessage.data = dbResponse
         return res.status(status.created).send(successMessage);
     } catch (e) {
         console.log(e);
@@ -85,30 +68,24 @@ const createUser = async (req, res) => {
    * @returns {object} user object
    */
 const signinUser = async (req, res) => {
-    const { email, password } = req.body;
-    if (isEmpty(email) || isEmpty(password)) {
+    const { name, password } = req.body;
+    if (isEmpty(name) || isEmpty(password)) {
         errorMessage.error = 'Email or Password detail is missing';
         return res.status(status.bad).send(errorMessage);
     }
-    if (!isValidEmail(email) || !validatePassword(password)) {
-        errorMessage.error = 'Please enter a valid Email or Password';
-        return res.status(status.bad).send(errorMessage);
-    }
     try {
-        const { rows } = await db.query(userDetailsQuery, [email]);
+        const { rows } = await db.query(getUserQuery, [name]);
         const dbResponse = rows[0];
         if (!dbResponse) {
-            errorMessage.error = 'User with this email does not exist';
+            errorMessage.error = 'User with this name does not exist';
             return res.status(status.notfound).send(errorMessage);
         }
-        if (!comparePassword(dbResponse.password, password)) {
+        if (dbResponse.password !== password) {
             errorMessage.error = 'The password you provided is incorrect';
             return res.status(status.bad).send(errorMessage);
         }
-        const token = generateUserToken(dbResponse.email, dbResponse.id, dbResponse.name);
         delete dbResponse.password;
-        successMessage.data = dbResponse;
-        successMessage.data.token = token;
+        successMessage.data = dbResponse
         return res.status(status.success).send(successMessage);
     } catch (error) {
         errorMessage.error = 'Operation was not successful';
@@ -118,7 +95,63 @@ const signinUser = async (req, res) => {
 
 };
 
+/**
+   * GetUsers
+   * @param {object} req
+   * @param {object} res
+   * @returns {object} user object
+   */
+  const getUsers = async (req, res) => {
+    try {
+        const dbResponse = await db.query(getUsersQuery);
+        if (!dbResponse || !dbResponse.rows) {
+            errorMessage.error = 'Something went wrong when getting all users from database';
+            return res.status(status.error).send(errorMessage);
+        }
+        dbResponse.rows.map((row) => {
+            delete row.password
+            return row;
+        })
+        successMessage.data = dbResponse.rows
+        return res.status(status.success).send(successMessage);
+    } catch (error) {
+        errorMessage.error = 'Operation was not successful';
+        console.log(error);
+        return res.status(status.error).send(errorMessage);
+    }
+};
+
+/**
+   * SetNotToDrawPerson
+   * @param {object} req
+   * @param {object} res
+   * @returns {object} user object
+   */
+  const setNotToDrawPerson = async (req, res) => {
+    const { id, userId } = req.body;
+    if(id === userId) {
+        errorMessage.error = 'You cannot set yourself to not to draw';
+        return res.status(status.error).send(errorMessage);
+    }
+    try {
+        const dbResponse = await db.query(setNotToDraw, [id, userId]);
+        if (!dbResponse) {
+            errorMessage.error = 'Could not set this person to not draw';
+            return res.status(status.error).send(errorMessage);
+        }
+        return res.status(status.success).send(successMessage);
+    } catch (error) {
+        errorMessage.error = 'Operation was not successful';
+        console.log(error);
+        return res.status(status.error).send(errorMessage);
+    }
+};
+
+
+
 export {
     createUser,
     signinUser,
+    getUsers,
+    setNotToDrawPerson
 };
