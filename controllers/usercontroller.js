@@ -1,12 +1,6 @@
-import moment from 'moment';
-
 import db from '../models/connection';
 
 import {
-    hashPassword,
-    comparePassword,
-    isValidEmail,
-    validatePassword,
     isEmpty,
 } from '../helpers/validations';
 
@@ -21,6 +15,9 @@ import {
 import {
     errorMessage, successMessage, status,
 } from '../helpers/status';
+import {
+    randomSanta
+} from '../helpers/randomSanta';
 
 /**
    * Create A User
@@ -147,11 +144,52 @@ const signinUser = async (req, res) => {
     }
 };
 
+/**
+   * DrawRandomSanta
+   * @param {object} req
+   * @param {object} res
+   * @returns {object} user object
+   */
+  const drawRandomSanta = async (req, res) => {
+    try {
+        const dbResponse = await db.query(getUsersQuery);
+        if (!dbResponse || !dbResponse.rows) {
+            errorMessage.error = 'Something went wrong when getting all users from database';
+            return res.status(status.error).send(errorMessage);
+        }
+        if(dbResponse.rows.length < 3) {
+            errorMessage.error = 'List of users is too small. You need more then 2 users.';
+            return res.status(status.conflict).send(errorMessage);
+        }
+        const arrayID = dbResponse.rows.map((row) => {
+            return row.id
+        })
+        await randomSanta(arrayID)
+        return res.status(status.success).send(successMessage);
+    } catch (error) {
+        errorMessage.error = 'Operation was not successful';
+        console.log(error);
+        return res.status(status.error).send(errorMessage);
+    }
+};
+
+const setDrawnPersonById = async (arrayOfPairs) => {
+    try {
+        const query = setDrawnPerson(arrayOfPairs)
+        console.log(query)
+        await db.query(query);
+    } catch (error) {
+        console.log(error);
+    }
+};
+
 
 
 export {
     createUser,
     signinUser,
     getUsers,
-    setNotToDrawPerson
+    setNotToDrawPerson,
+    setDrawnPersonById,
+    drawRandomSanta
 };
