@@ -5,6 +5,8 @@ const getUsersQuery = 'SELECT * from Persons';
 
 const getUserQuery = 'SELECT * FROM Persons WHERE Name=$1';
 
+const getUserByIdQuery = 'SELECT * FROM Persons WHERE ID=$1';
+
 const setNotToDraw = 'UPDATE PERSONS SET notToDraw=$1 WHERE ID=$2;'
 
 const setDrawnPerson = (arrayOfPairs) => {
@@ -21,5 +23,6 @@ export {
     getUsersQuery,
     getUserQuery,
     setNotToDraw,
-    setDrawnPerson
+    setDrawnPerson,
+    getUserByIdQuery
 };
