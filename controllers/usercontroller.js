@@ -164,7 +164,11 @@ const signinUser = async (req, res) => {
         const arrayID = dbResponse.rows.map((row) => {
             return row.id
         })
-        await randomSanta(arrayID)
+        let pairDictNotToDraw = {}
+        dbResponse.rows.forEach(({id, nottodraw}) => {
+            pairDictNotToDraw = {...pairDictNotToDraw, [id]: nottodraw}
+        })
+        await randomSanta(arrayID, pairDictNotToDraw)
         return res.status(status.success).send(successMessage);
     } catch (error) {
         errorMessage.error = 'Operation was not successful';
