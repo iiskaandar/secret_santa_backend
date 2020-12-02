@@ -1,6 +1,6 @@
 import express from 'express';
 
-import { createUser, signinUser, getUsers, setNotToDrawPerson, drawRandomSanta } from '../controllers/userController';
+import { createUser, signinUser, getUsers, setNotToDrawPerson, drawRandomSanta } from '../controllers/usercontroller';
 
 const router = express.Router();
 
