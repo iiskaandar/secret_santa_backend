@@ -20,6 +20,8 @@ import {
     randomSanta
 } from '../helpers/randomSanta';
 
+import { io } from '../app'
+
 /**
    * Create A User
    * @param {object} req
@@ -46,10 +48,12 @@ const createUser = async (req, res) => {
     ];
     try {
         await db.query(createUserQuery, values);
+        const listOfUsers = await getUsersStatic()
+        io.sockets.emit('NewUser', listOfUsers);
+        console.log(io.sockets)
         const response = await db.query(getUserQuery, [name]);
         const dbResponse = response.rows[0];
         delete dbResponse.password;
-        successMessage.data = dbResponse
         return res.status(status.success).send(successMessage);
     } catch (e) {
         console.log(e);
@@ -92,6 +96,22 @@ const signinUser = async (req, res) => {
     }
 
 };
+
+const getUsersStatic = async () => {
+    const dbResponse = await db.query(getUsersQuery);
+    if (!dbResponse || !dbResponse.rows) {
+        errorMessage.error = 'Something went wrong when getting all users from database';
+        return res.status(status.success).send(errorMessage);
+    }
+    dbResponse.rows.map((row) => {
+        delete row.password
+        delete row.isadmin;
+        delete row.nottodraw;
+        delete row.drawnperson;
+        return row;
+    })
+    return dbResponse.rows
+}
 
 /**
    * GetUsers
@@ -157,7 +177,7 @@ const signinUser = async (req, res) => {
    */
   const drawRandomSanta = async (req, res) => {
     try {
-        const dbResponse = await db.query(getUsersQuery);
+        let dbResponse = await db.query(getUsersQuery);
         if (!dbResponse || !dbResponse.rows) {
             errorMessage.error = 'Something went wrong when getting all users from database';
             return res.status(status.success).send(errorMessage);
@@ -174,6 +194,17 @@ const signinUser = async (req, res) => {
             pairDictNotToDraw = {...pairDictNotToDraw, [id]: nottodraw}
         })
         await randomSanta(arrayID, pairDictNotToDraw)
+        dbResponse = await db.query(getUsersQuery);
+        io.sockets.sockets.forEach(async (socket) => {
+            console.log(socket.handshake.query.id)
+            const { rows } = await db.query(getUserByIdQuery, [socket.handshake.query.id]);
+            dbResponse.rows.forEach(({id, name}) => {
+                if(rows[0].drawnperson === id){
+                    console.log(name)
+                    io.to(socket.id).emit('NewDrawnPerson', name);
+                }
+            })
+        });
         return res.status(status.success).send(successMessage);
     } catch (error) {
         errorMessage.error = 'Operation was not successful';

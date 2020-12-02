@@ -3,7 +3,7 @@ import bodyParser from 'body-parser';
 import morgan from 'morgan';
 import cors from 'cors';
 import '@babel/polyfill';
-import userRoutes from './routes/userRoutes'
+import userRoutes from './routes/userRoutes';
 
 
 const app = express();
@@ -36,8 +36,38 @@ app.use((err, req, res, next) => {
 
 const port = process.env.PORT || 8000;
 
-app.listen(port, () => {
+/* app.listen(port, () => {
     console.log(`Server is live on PORT: ${port}`);
-});
+});*/
 
-export default app;
+const server = require('http').createServer(app)
+
+export const io = require('socket.io')(server, {
+  cors: {
+    origin: "*",
+    methods: ["GET", "POST"],
+    credentials: true
+  }
+});
+server.listen(port)
+//io.sockets.emit('hi','everyone')
+let interval 
+io.on("connection", socket => {
+    console.log(socket.id);
+    if (interval) {
+      clearInterval(interval);
+    }
+    interval = setInterval(() => getApiAndEmit(socket), 1000);
+    socket.on("disconnect", () => {
+      console.log("Client disconnected");
+      clearInterval(interval);
+    });
+  });
+
+  
+  const getApiAndEmit = socket => {
+    // Emitting a new message. Will be consumed by the client
+    socket.emit("getUsers", 'Odpowiedz');
+  };
+
+export default server;
