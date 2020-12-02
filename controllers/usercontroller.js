@@ -54,7 +54,8 @@ const createUser = async (req, res) => {
         const response = await db.query(getUserQuery, [name]);
         const dbResponse = response.rows[0];
         delete dbResponse.password;
-        return res.status(status.success).send(dbResponse);
+        successMessage.data = dbResponse
+        return res.status(status.success).send(successMessage);
     } catch (e) {
         console.log(e);
 
