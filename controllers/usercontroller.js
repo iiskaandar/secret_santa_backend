@@ -158,6 +158,7 @@ const getUsersStatic = async () => {
             errorMessage.error = 'Could not set this person to not draw';
             return res.status(status.success).send(errorMessage);
         }
+        await db.query(setNotToDraw, [userId, id]);
         const { rows } = await db.query(getUserByIdQuery, [userId]);
         dbResponse = rows[0];
         delete dbResponse.password;
